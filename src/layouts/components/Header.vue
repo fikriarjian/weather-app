@@ -1,6 +1,6 @@
 <template>
   <header class="relative left-0 top-0 w-full">
-    <div class="mx-auto flex max-w-304 items-center justify-between px-4 py-6 sm:px-6 sm:py-8 xl:px-0">
+    <div class="mx-auto flex flex-col gap-4 max-w-304 items-center justify-between px-4 py-6 xl:flex-row sm:px-6 sm:py-8 xl:px-0">
       <div>
         <img :src="Logo" alt="Logo" class="w-32 h-auto" />
       </div>

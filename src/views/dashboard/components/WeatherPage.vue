@@ -3,7 +3,7 @@
     class="mx-auto flex w-full max-w-304 flex-col items-center gap-6 px-4 pb-10 sm:gap-8 sm:px-6 xl:px-0"
   >
     <h1
-      class="text-center text-4xl leading-[1.12] font-semibold text-neutral-0 sm:text-5xl"
+      class="text-center text-6xl leading-[1.12] font-semibold text-neutral-0 xl:text-4xl"
     >
       How's the sky looking today?
     </h1>
