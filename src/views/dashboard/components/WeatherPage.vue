@@ -163,6 +163,7 @@ const isDropdownOpen = ref(false);
 const highlightedIndex = ref(-1);
 let searchTimer: number | undefined;
 let searchRequestId = 0;
+let weatherRefreshTimer: number | undefined;
 
 const weatherData = ref<WeatherResponse>();
 const selectedHourDay = ref("");
@@ -287,6 +288,8 @@ async function fetchLocations(value: string) {
 }
 
 async function fetchWeather() {
+  if (isWeatherLoading.value) return;
+
   const location = appStore.selectedLocation;
   isWeatherLoading.value = true;
   emit("status", "loading");
@@ -315,6 +318,8 @@ watch(
 );
 
 fetchWeather();
+
+weatherRefreshTimer = window.setInterval(fetchWeather, 5 * 60 * 1000);
 
 function searchLocation() {
   if (locations.value.length > 0) {
@@ -381,6 +386,7 @@ function closeDropdown() {
 
 onBeforeUnmount(() => {
   if (searchTimer) window.clearTimeout(searchTimer);
+  if (weatherRefreshTimer) window.clearInterval(weatherRefreshTimer);
 });
 
 defineExpose({
