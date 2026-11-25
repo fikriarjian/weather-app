@@ -5,7 +5,7 @@
     <h1
       class="text-center text-6xl leading-[1.12] font-semibold text-neutral-0 xl:text-4xl"
     >
-      How's the sky looking today?
+      How's the sky looking today? why
     </h1>
 
     <form
