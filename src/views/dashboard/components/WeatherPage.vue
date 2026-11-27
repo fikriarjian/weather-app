@@ -45,7 +45,17 @@
           v-if="isDropdownOpen"
           class="absolute left-0 top-[calc(100%+8px)] z-20 w-full overflow-hidden rounded-xl bg-neutral-800 p-2 shadow-2xl"
         >
+          <div
+            v-if="isLoading"
+            role="status"
+            class="flex h-12 items-center gap-2 rounded-md px-4 text-sm text-neutral-300"
+          >
+            <i class="ti ti-loader-2 animate-spin" aria-hidden="true" />
+            <span>Search in progress</span>
+          </div>
+
           <button
+            v-else
             v-for="(location, index) in locations"
             :key="location.id"
             type="button"
@@ -83,16 +93,83 @@
       </Button>
     </form>
 
+    <p
+      v-if="hasNoResults"
+      role="status"
+      class="text-center text-lg font-semibold text-neutral-0"
+    >
+      No search result found!
+    </p>
+
     <div
+      v-else-if="isWeatherLoading && !weatherData"
+      role="status"
+      aria-label="Loading weather forecast"
+      aria-busy="true"
+      class="grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
+    >
+      <div class="flex min-w-0 flex-col gap-6">
+        <div
+          class="flex h-67 w-full items-center justify-center rounded-3xl border border-neutral-600 bg-neutral-800 sm:h-71.5 sm:rounded-4xl"
+        >
+          <div class="flex flex-col items-center gap-2 text-neutral-200">
+            <div class="flex gap-2" aria-hidden="true">
+              <span class="size-2 rounded-full bg-neutral-200 animate-pulse" />
+              <span class="size-2 rounded-full bg-neutral-200 animate-pulse [animation-delay:150ms]" />
+              <span class="size-2 rounded-full bg-neutral-200 animate-pulse [animation-delay:300ms]" />
+            </div>
+            <span class="text-sm">Loading...</span>
+          </div>
+        </div>
+
+        <div class="grid w-full grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-5">
+          <div
+            v-for="label in ['Feels Like', 'Humidity', 'Wind', 'Precipitation']"
+            :key="label"
+            class="flex h-28 flex-col justify-between rounded-xl border border-neutral-600 bg-neutral-700 p-4 sm:p-5"
+          >
+            <span class="text-lg text-neutral-300">{{ label }}</span>
+            <span class="text-4xl text-neutral-0">—</span>
+          </div>
+        </div>
+
+        <div class="flex w-full flex-col gap-4">
+          <h3 class="text-lg font-semibold text-neutral-0">Daily Forecast</h3>
+          <div class="grid w-full grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+            <div
+              v-for="day in 7"
+              :key="day"
+              class="h-41.5 rounded-xl border border-neutral-600 bg-neutral-700"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2 rounded-3xl bg-neutral-800 px-4 py-6 sm:rounded-4xl sm:px-6">
+        <div class="mb-2 flex items-center justify-between gap-4">
+          <span class="text-lg font-semibold text-neutral-0">Hourly forecast</span>
+          <span class="h-6 w-11 rounded-md bg-neutral-700" aria-hidden="true" />
+        </div>
+        <div
+          v-for="row in 8"
+          :key="row"
+          class="h-10 w-full rounded-xl border border-neutral-600 bg-neutral-700"
+          aria-hidden="true"
+        />
+      </div>
+    </div>
+
+    <div
+      v-else
       class="grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
     >
       <div class="flex min-w-0 flex-col gap-6">
         <WeatherSection
-          :city="weatherSections?.city"
-          :day-date="weatherSections?.dayDate"
-          :degrees="weatherSections?.degrees"
-              :icons="weatherSections?.icons"
-              :temperature-unit="temperatureSymbol"
+          :city="weatherSections.city"
+          :day-date="weatherSections.dayDate"
+          :degrees="weatherSections.degrees"
+          :icons="weatherSections.icons"
+          :temperature-unit="temperatureSymbol"
         />
         <div class="grid w-full grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-5">
           <template v-for="(x, index) in currentCoditionsValue" :key="index">
@@ -104,7 +181,7 @@
           </template>
         </div>
         <div class="flex w-full flex-col gap-4">
-          <h3 class="font-semibold text-lg text-neutral-0">Daily Forecast</h3>
+          <h3 class="text-lg font-semibold text-neutral-0">Daily Forecast</h3>
           <div
             class="grid w-full grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-7"
           >
@@ -159,6 +236,7 @@ const emit = defineEmits<{
 const query = ref("");
 const locations = ref<LocationResult[]>([]);
 const isLoading = ref(false);
+const hasNoResults = ref(false);
 const isDropdownOpen = ref(false);
 const highlightedIndex = ref(-1);
 let searchTimer: number | undefined;
@@ -261,10 +339,15 @@ watch(query, (value) => {
   if (!value.trim()) {
     locations.value = [];
     isLoading.value = false;
+    hasNoResults.value = false;
     isDropdownOpen.value = false;
     return;
   }
 
+  hasNoResults.value = false;
+  locations.value = [];
+  isLoading.value = true;
+  isDropdownOpen.value = true;
   searchTimer = window.setTimeout(() => fetchLocations(value), 300);
 });
 
@@ -278,10 +361,13 @@ async function fetchLocations(value: string) {
     if (requestId !== searchRequestId || !query.value.trim()) return;
 
     locations.value = results;
-    isDropdownOpen.value = true;
+    hasNoResults.value = results.length === 0;
+    isDropdownOpen.value = results.length > 0;
   } catch {
     if (requestId !== searchRequestId) return;
     locations.value = [];
+    hasNoResults.value = false;
+    isDropdownOpen.value = false;
   } finally {
     if (requestId === searchRequestId) isLoading.value = false;
   }
@@ -327,11 +413,14 @@ function searchLocation() {
       locations.value[highlightedIndex.value >= 0 ? highlightedIndex.value : 0],
     );
   } else if (query.value.trim()) {
+    if (searchTimer) window.clearTimeout(searchTimer);
+    isDropdownOpen.value = true;
     fetchLocations(query.value);
   }
 }
 
 function selectLocation(location: LocationResult) {
+  hasNoResults.value = false;
   query.value = location.name;
   appStore.selectedLocation = {
     name: location.name,
@@ -349,6 +438,7 @@ function clearSearch() {
   searchRequestId++;
   query.value = "";
   locations.value = [];
+  hasNoResults.value = false;
   highlightedIndex.value = -1;
   isDropdownOpen.value = false;
   isLoading.value = false;
@@ -380,7 +470,7 @@ function moveSelection(direction: number) {
 
 function closeDropdown() {
   window.setTimeout(() => {
-    isDropdownOpen.value = false;
+    if (!isLoading.value) isDropdownOpen.value = false;
   }, 100);
 }
 
